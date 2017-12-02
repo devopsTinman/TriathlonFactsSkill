@@ -1,133 +1,283 @@
-/* eslint-disable  func-names */
-/* eslint quote-props: ["error", "consistent"]*/
+// --------------- Main handler -----------------------
+// Route the incoming request based on type (LaunchRequest, IntentRequest,
+// etc.) The JSON body of the request is provided in the event parameter.
+exports.handler = (event, context, callback) => {
+    try {
+        console.log('event.session.application.applicationId=${event.session.application.applicationId}');
+/
+        if (event.session.application.applicationId !== 'amzn1.ask.skill.4e575aaa-d52f-4479-8fbd-3beb6beaedfb') {
+             callback('Invalid Application ID');
+        }
+
+        if (event.session.new) {
+            onSessionStarted({ requestId: event.request.requestId }, event.session);
+        }
+        if (event.request.type === 'LaunchRequest') {
+            console.log('Launching');
+            onLaunch(event.request,
+                event.session,
+                (sessionAttributes, speechletResponse) => {
+                    callback(null, buildResponse(sessionAttributes, speechletResponse));
+                });
+        } else if (event.request.type === 'IntentRequest') {
+            console.log('Intent Request');
+            onIntent(event.request,
+                event.session,
+                (sessionAttributes, speechletResponse) => {
+                    callback(null, buildResponse(sessionAttributes, speechletResponse));
+                });
+        } else if (event.request.type === 'SessionEndedRequest') {
+            console.log('Session End Request');
+            onSessionEnded(event.request, event.session);
+            callback();
+        }
+    } catch (err) {
+        callback(err);
+    }
+};
+
+
+
+// --------------- Helpers that build all of the responses -----------------------
+function buildSpeechletResponse(title, output, repromptText, shouldEndSession) {
+    return {
+        outputSpeech: {
+            type: 'PlainText',
+            text: output,
+        },
+        card: {
+            type: 'Simple',
+            title: `SessionSpeechlet - ${title}`,
+            content: `SessionSpeechlet - ${output}`,
+        },
+        reprompt: {
+            outputSpeech: {
+                type: 'PlainText',
+                text: repromptText,
+            },
+        },
+        shouldEndSession,
+    };
+}
+function buildResponse(sessionAttributes, speechletResponse) {
+    return {
+        version: '1.0',
+        sessionAttributes,
+        response: speechletResponse,
+    };
+}
+// ---------------
+
+// --------------- Data ---------------------------------
+var triFacts =
+[
+  {
+    "name": "Basic",
+    "fact": "Triathlon is a multi-sport event involving swimming, cycling and running in succession.",
+  },
+  {
+    "name": "Origin",
+    "fact": "Triathlon was first introduced in the 1920s in France",
+  },
+  {
+    "name": "FirstLongDistance",
+    "fact": "The first modern long-distance triathlon event was the Hawaiian Ironman Triathlon.",
+  },
+  {
+    "name": "Transition",
+    "fact": "The transition from swim to bike is referred to as T1 and that between the bike and run is referred to as T2.",
+  },
+  {
+    "name": "FirstTri",
+    "fact": "The first modern swim/bike/run event to be called a triathlon was held at Mission Bay, San Diego, California on September 25, 1974",
+  },
+  {
+    "name": "ITU",
+    "fact": "The International Triathlon Union (ITU) was founded in 1989 as the international governing body of the sport, with the chief goal, at that time, of putting triathlon on the Olympic program",
+  },
+  {
+    "name": "Full",
+    "fact": "A full distance triathlon is considered to be a 2.4 mile swim, a 112 mile bike and a 26.2 mile run for a total distance of 140.6 miles",
+  },
+  {
+    "name": "Ultra",
+    "fact": "Triathlons longer than full distance are classed as Ultra-triathlons",
+  },
+  {
+    "name": "Distance",
+    "fact": "Triathlons are not necessarily restricted to prescribed distances. Distances can be any combination of distance set by race organizers to meet various distance constraints or to attract a certain type of athlete",
+  },
+  {
+    "name": "Olympic",
+    "fact": "The standard Olympic distance of 1.5/40/10 km was created by longtime triathlon race director Jim Curl in the mid-1980s, after he and partner Carl Thomas produced the U.S. Triathlon Series (USTS) between 1982 and 1997",
+  },
+  {
+    "name": "Individual",
+    "fact": "Most triathlons are individual events",
+  },
+  {
+    "name": "Error",
+    "fact": "The ITU accepts a 5% margin of error in the cycle and run course distances",
+  },
+  {
+    "name": "Start",
+    "fact": "In a mass start, all athletes enter the water and begin the competition following a single start signal.",
+  },
+  {
+    "name": "Wave",
+    "fact": "In wave start events, smaller groups of athletes begin the race every few minutes",
+  },
+  {
+    "name": "Cycling",
+    "fact": "The cycling stage proceeds around a marked course, typically on public roads",
+  },
+  {
+    "name": "Swim",
+    "fact": "The swim leg usually proceeds around a series of marked buoys before athletes exit the water near the transition area",
+  },
+  {
+    "name": "Aid",
+    "fact": "In most races, aid stations located on the bike and run courses provide water and energy drinks to the athletes as they pass by",
+  },
+  {
+    "name": "Helmet",
+    "fact": "One rule involving the cycle leg is that the competitor's helmet must be donned before the competitor mounts (or even takes possession of, in certain jurisdictions[35]) the bike and must remain on until the competitor has dismounted",
+  },
+  {
+    "name": "benefits",
+    "fact": "With each sport being an endurance event, training for a triathlon provides cardiovascular exercise benefits.",
+  },
+  {
+    "name": "fitness",
+    "fact": "Participants in triathlon often use the sport to improve or maintain their physical fitness",
+  },
+  {
+    "name": "endurance",
+    "fact": "There are three components that have been researched to improve endurance sports performance; aerobic capacity, lactate threshold, and economy",
+  },
+  {
+    "name": "hours",
+    "fact": "Triathletes spend many hours training for competitions, like other endurance event participants",
+  },
+  {
+    "name": "legs",
+    "fact": "Triathletes will often use their legs less vigorously and more carefully than other swimmers, conserving their leg muscles for the cycle and run to follow",
+  },
+  {
+    "name": "openWater",
+    "fact": "the majority of triathlons involve open-water (outdoor) swim stages, rather than pools with lane markers",
+  },
+  {
+    "name": "sighting",
+    "fact": "open-water swims necessitate sighting: raising the head to look for landmarks or buoys that mark the course",
+  },
+  {
+    "name": "drafting",
+    "fact": "Triathlon cycling can differ from most professional bicycle racing depending on whether drafting is allowed during competition",
+  },
+  {
+    "name": "aero",
+    "fact": "Triathlon bicycles are generally optimized for aerodynamics, having special handlebars called aero-bars or tri-bars, aerodynamic wheels, and other components",
+  },
+  {
+    "name": "geometry",
+    "fact": "Triathlon bikes use a specialized geometry, including a steep seat-tube angle both to improve aerodynamics and to spare muscle groups needed for running",
+  },
+  {
+    "name": "cadence",
+    "fact": "At the end of the bike segment, triathletes also often cycle with a higher cadence (revolutions per minute), which serves in part to keep the muscles loose and flexible for running.",
+  }
+];
+
+// --------------- Events -----------------------
 /**
- * This sample demonstrates a simple skill built with the Amazon Alexa Skills
- * nodejs skill development kit.
- * This sample supports multiple lauguages. (en-US, en-GB, de-DE).
- * The Intent Schema, Custom Slots and Sample Utterances for this skill, as well
- * as testing instructions are located at https://github.com/alexa/skill-sample-nodejs-fact
- **/
+ * Called when the session starts.
+ */
+function onSessionStarted(sessionStartedRequest, session) {
+    console.log(`onSessionStarted requestId=${sessionStartedRequest.requestId}, sessionId=${session.sessionId}`);
+}
+/**
+ * Called when the user launches the skill without specifying what they want.
+ */
+function onLaunch(launchRequest, session, callback) {
+    console.log(`onLaunch requestId=${launchRequest.requestId}, sessionId=${session.sessionId}`);
+// Dispatch to your skill's launch.
+    getWelcomeResponse(callback);
+}
 
-'use strict';
+function getWelcomeResponse(callback) {
+    /* If we wanted to initialize the session to have some attributes we could add those here.*/
+    const sessionAttributes = {};
+    const cardTitle = 'Welcome';
+    const speechOutput = 'Welcome to Triathlon Nerd facts, you can say: Tell me a triathlon fact' ;
+    /* If the user either does not reply to the welcome message or says something that is not understood, they will be prompted again with this text.*/
+    const repromptText = 'You can say: Tell me a fact ' ;
+    const shouldEndSession = false;
+callback(sessionAttributes,
+        buildSpeechletResponse(cardTitle, speechOutput, repromptText, shouldEndSession));
+}
 
-const Alexa = require('alexa-sdk');
+/**
+ * Called when the user specifies an intent for this skill.
+ */
+function onIntent(intentRequest, session, callback) {
+    console.log(`onIntent requestId=${intentRequest.requestId}, sessionId=${session.sessionId}`);
+const intent = intentRequest.intent;
+    const intentName = intentRequest.intent.name;
+// Dispatch to your skill's intent handlers
+    if (intentName === 'AMAZON.HelpIntent') {
+        console.log('help intent');
+        getWelcomeResponse(callback);
+    } else if (intentName === 'AMAZON.StopIntent') {
+        console.log('stop intent');
+        handleSessionEndRequest(callback);
+    } else if (intentName === 'AMAZON.CancelIntent') {
+        console.log('cancel intent');
+        handleSessionEndRequest(callback);
+    } else if (intentName === 'TriathlonFactIntent') {
+        console.log('fact intent');
+        getFactResponse(callback);
+    }
+}
 
-const APP_ID = undefined;  // TODO replace with your app ID (OPTIONAL).
+function handleSessionEndRequest(callback) {
+    const cardTitle = 'Session Ended';
+    const speechOutput = 'Thank you for using the Triathlon Nerd Skill, have a great day!';
+    // Setting this to true ends the session and exits the skill.
+    const shouldEndSession = true;
+callback({}, buildSpeechletResponse(cardTitle, speechOutput, null, shouldEndSession));
+}
 
-const languageStrings = {
-    'en-GB': {
-        translation: {
-            FACTS: [
-                'A year on Mercury is just 88 days long.',
-                'Despite being farther from the Sun, Venus experiences higher temperatures than Mercury.',
-                'Venus rotates anti-clockwise, possibly because of a collision in the past with an asteroid.',
-                'On Mars, the Sun appears about half the size as it does on Earth.',
-                'Earth is the only planet not named after a god.',
-                'Jupiter has the shortest day of all the planets.',
-                'The Milky Way galaxy will collide with the Andromeda Galaxy in about 5 billion years.',
-                'The Sun contains 99.86% of the mass in the Solar System.',
-                'The Sun is an almost perfect sphere.',
-                'A total solar eclipse can happen once every 1 to 2 years. This makes them a rare event.',
-                'Saturn radiates two and a half times more energy into space than it receives from the Sun.',
-                'The temperature inside the Sun can reach 15 million degrees Celsius.',
-                'The Moon is moving approximately 3.8 cm away from our planet every year.',
-            ],
-            SKILL_NAME: 'British Space Facts',
-            GET_FACT_MESSAGE: "Here's your fact: ",
-            HELP_MESSAGE: 'You can say tell me a space fact, or, you can say exit... What can I help you with?',
-            HELP_REPROMPT: 'What can I help you with?',
-            STOP_MESSAGE: 'Goodbye!',
-        },
-    },
-    'en-US': {
-        translation: {
-            FACTS: [
-                'A year on Mercury is just 88 days long.',
-                'Despite being farther from the Sun, Venus experiences higher temperatures than Mercury.',
-                'Venus rotates counter-clockwise, possibly because of a collision in the past with an asteroid.',
-                'On Mars, the Sun appears about half the size as it does on Earth.',
-                'Earth is the only planet not named after a god.',
-                'Jupiter has the shortest day of all the planets.',
-                'The Milky Way galaxy will collide with the Andromeda Galaxy in about 5 billion years.',
-                'The Sun contains 99.86% of the mass in the Solar System.',
-                'The Sun is an almost perfect sphere.',
-                'A total solar eclipse can happen once every 1 to 2 years. This makes them a rare event.',
-                'Saturn radiates two and a half times more energy into space than it receives from the sun.',
-                'The temperature inside the Sun can reach 15 million degrees Celsius.',
-                'The Moon is moving approximately 3.8 cm away from our planet every year.',
-            ],
-            SKILL_NAME: 'American Space Facts',
-            GET_FACT_MESSAGE: "Here's your fact: ",
-            HELP_MESSAGE: 'You can say tell me a space fact, or, you can say exit... What can I help you with?',
-            HELP_REPROMPT: 'What can I help you with?',
-            STOP_MESSAGE: 'Goodbye!',
-        },
-    },
-    'de-DE': {
-        translation: {
-            FACTS: [
-                'Ein Jahr dauert auf dem Merkur nur 88 Tage.',
-                'Die Venus ist zwar weiter von der Sonne entfernt, hat aber höhere Temperaturen als Merkur.',
-                'Venus dreht sich entgegen dem Uhrzeigersinn, möglicherweise aufgrund eines früheren Zusammenstoßes mit einem Asteroiden.',
-                'Auf dem Mars erscheint die Sonne nur halb so groß wie auf der Erde.',
-                'Die Erde ist der einzige Planet, der nicht nach einem Gott benannt ist.',
-                'Jupiter hat den kürzesten Tag aller Planeten.',
-                'Die Milchstraßengalaxis wird in etwa 5 Milliarden Jahren mit der Andromeda-Galaxis zusammenstoßen.',
-                'Die Sonne macht rund 99,86 % der Masse im Sonnensystem aus.',
-                'Die Sonne ist eine fast perfekte Kugel.',
-                'Eine Sonnenfinsternis kann alle ein bis zwei Jahre eintreten. Sie ist daher ein seltenes Ereignis.',
-                'Der Saturn strahlt zweieinhalb mal mehr Energie in den Weltraum aus als er von der Sonne erhält.',
-                'Die Temperatur in der Sonne kann 15 Millionen Grad Celsius erreichen.',
-                'Der Mond entfernt sich von unserem Planeten etwa 3,8 cm pro Jahr.',
-            ],
-            SKILL_NAME: 'Weltraumwissen auf Deutsch',
-            GET_FACT_MESSAGE: 'Hier sind deine Fakten: ',
-            HELP_MESSAGE: 'Du kannst sagen, „Nenne mir einen Fakt über den Weltraum“, oder du kannst „Beenden“ sagen... Wie kann ich dir helfen?',
-            HELP_REPROMPT: 'Wie kann ich dir helfen?',
-            STOP_MESSAGE: 'Auf Wiedersehen!',
-        },
-    },
-};
+function getFactResponse(callback) {
 
-const handlers = {
-    'LaunchRequest': function () {
-        this.emit('GetFact');
-    },
-    'GetNewFactIntent': function () {
-        this.emit('GetFact');
-    },
-    'GetFact': function () {
-        // Get a random space fact from the space facts list
-        // Use this.t() to get corresponding language data
-        const factArr = this.t('FACTS');
-        const factIndex = Math.floor(Math.random() * factArr.length);
-        const randomFact = factArr[factIndex];
+    //get random index from array of data
+    var index = getRandomInt(Object.keys(triFacts).length -1);
 
-        // Create speech output
-        const speechOutput = this.t('GET_FACT_MESSAGE') + randomFact;
-        this.emit(':tellWithCard', speechOutput, this.t('SKILL_NAME'), randomFact);
-    },
-    'AMAZON.HelpIntent': function () {
-        const speechOutput = this.t('HELP_MESSAGE');
-        const reprompt = this.t('HELP_MESSAGE');
-        this.emit(':ask', speechOutput, reprompt);
-    },
-    'AMAZON.CancelIntent': function () {
-        this.emit(':tell', this.t('STOP_MESSAGE'));
-    },
-    'AMAZON.StopIntent': function () {
-        this.emit(':tell', this.t('STOP_MESSAGE'));
-    },
-    'SessionEndedRequest': function () {
-        this.emit(':tell', this.t('STOP_MESSAGE'));
-    },
-};
+    // If we wanted to initialize the session to have some attributes we could add those here.
+    const sessionAttributes = {};
 
-exports.handler = (event, context) => {
-    const alexa = Alexa.handler(event, context);
-    alexa.APP_ID = APP_ID;
-    // To enable string internationalization (i18n) features, set a resources object.
-    alexa.resources = languageStrings;
-    alexa.registerHandlers(handlers);
-    alexa.execute();
-};
+    //Get card title from data
+    const cardTitle = triFacts[index].name;
+
+    //Get output from data
+    const speechOutput = triFacts[index].fact;
+    // If the user either does not reply to the welcome message or says something that is not
+    // understood, they will be prompted again with this text.
+    const repromptText = '' ;
+    const shouldEndSession = false;
+callback(sessionAttributes,
+        buildSpeechletResponse(cardTitle, speechOutput, repromptText, shouldEndSession));
+}
+
+function getRandomInt(max) {
+    return Math.floor(Math.random() * (max - 0 + 1)) + 0;
+}
+
+/**
+ * Called when the user ends the session.
+ * Is not called when the skill returns shouldEndSession=true.
+ */
+function onSessionEnded(sessionEndedRequest, session) {
+    console.log(`onSessionEnded requestId=${sessionEndedRequest.requestId}, sessionId=${session.sessionId}`);
+    // Add cleanup logic here
+}
